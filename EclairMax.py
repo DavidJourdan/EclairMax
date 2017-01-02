@@ -22,9 +22,6 @@ import numpy as np
 # if the program returns a recursion error, just modify the recursion limit below
 sys.setrecursionlimit(50000)
 
-# define a symbolic variable
-t = sp.symbols('t')
-
 #Useful, general-purpose functions
 
 def d(A, B):
@@ -50,7 +47,7 @@ def area(points):
 
     :param points: the points of the polygon
     :type points: matrix of size 2*n
-    :return: the area of the polygon 
+    :return: the area of the polygon
     :rtype: float
 
     :Example:
@@ -60,7 +57,7 @@ def area(points):
     """
     n = len(points[0])
     area = 0.0
-    for i in xrange(n):
+    for i in range(n):
         j = (i + 1) % n
         area += points[0, i] * points[1, j]
         area -= points[0, j] * points[1, i]
@@ -78,7 +75,7 @@ def standard_placing(curve, r, B, C, i, n):
     :param r: radius
     :param B: intersection in upper curve
     :param C: intersection in lower curve
-    :param i: index 
+    :param i: index
     :param n: size of curve
     :type curve: matrix of size 2*n
     :type r: float
@@ -88,8 +85,8 @@ def standard_placing(curve, r, B, C, i, n):
     :type n: int
     :return: the point of the new lamp
     :return: the index of the new lamp in curve
-    """  
-    A = curve[:, i]                       
+    """
+    A = curve[:, i]
     if d(A, B) <= r and d(A, C) <= r and i < n - 1:
         return standard_placing(curve, r, B, C, i + 1, n)
     else:
@@ -106,7 +103,7 @@ def placing(curve, r, B, C, i, n):
     :param r: radius
     :param B: intersection in upper curve
     :param C: intersection in lower curve
-    :param i: index 
+    :param i: index
     :param n: size of curve
     :type curve: matrix of size 2*n
     :type r: float
@@ -117,7 +114,7 @@ def placing(curve, r, B, C, i, n):
     :return: the point of the new lamp
     :return: the index of the new lamp in curve
     """
-    A = curve[:, i]               
+    A = curve[:, i]
     if d(A, C) <= r and d(A, B) > r and i < n - 1:
         return placing(curve, r, B, C, i + 1, n)
     elif d(A, B) <= r:
@@ -132,7 +129,7 @@ def intersection(curve, r, A, i, n):
     :param curve: the curve in which the program iterates
     :param r: radius
     :param A: a point
-    :param i: index 
+    :param i: index
     :param n: size of curve
     :type curve: matrix of size 2*n
     :type r: float
@@ -143,7 +140,7 @@ def intersection(curve, r, A, i, n):
     :return: the index of the new lamp in curve
 
     """
-    B = curve[:, i]                   
+    B = curve[:, i]
     while d(A, B) < r and i < n - 1:
         i += 1
         B = curve[:, i]
@@ -161,11 +158,14 @@ def road_creator(F, step, w):
     :type step: float
     :type w: float
     :return:the x-axis and y-axis of the central curve, lower curve and upper curve
-    :rtype: ndarray with 6 lines 
+    :rtype: ndarray with 6 lines
 
     """
-    X, Y, LX, LY = [], [], [], []  
-    n = len(F)  
+    # define a symbolic variable
+    t = sp.symbols('t')
+
+    X, Y, LX, LY = [], [], [], []
+    n = len(F)
     for k in range(n):
         x = sp.lambdify(t, F[k, 0], "numpy") #used to map the expressions in an array
         y = sp.lambdify(t, F[k, 1], "numpy")
@@ -176,7 +176,7 @@ def road_creator(F, step, w):
             dx = sp.lambdify(t, - sp.diff(F[k, 0], t), "numpy")
             dy = sp.lambdify(t, - sp.diff(F[k, 1], t), "numpy")
         #list of values for t
-        A = np.linspace(F[k, 2], F[k, 3], fabs((F[k, 3] - F[k, 2]) / step), endpoint=False) 
+        A = np.linspace(F[k, 2], F[k, 3], fabs((F[k, 3] - F[k, 2]) / step), endpoint=False)
         X.append(x(A)) #list of values for x(t)
         Y.append(y(A)) #list of values for y(t)
         # formulas for finding the parallel curves
@@ -187,15 +187,13 @@ def road_creator(F, step, w):
     return np.array([X, Y, X - LX, Y - LY, X + LX, Y + LY])
 
 
-def eclaire(r, step, road):
-    """Return the list of lamps 
+def eclaire(r, road):
+    """Return the list of lamps
 
     :param r: the radius
-    :param step: the step size of the array
     :param road: the road in which iterates the function
     :type r: float
-    :type step: float
-    :type road: ndarray of floats with 6 lines 
+    :type road: ndarray of floats with 6 lines
     :return: the list of lamps
     :rtype: 1-dimensional ndarray
     """
@@ -216,9 +214,9 @@ def eclaire(r, step, road):
             A, j = placing(lower, r, B, C, j, n)
         else:
             A, i = placing(upper, r, C, B, i, n)
-        list.append(A)
-        on_the_upper_side = not (on_the_upper_side)
-    return np.vstack(lst[:len(lst) - 1])
+        lst.append(A)
+        on_the_upper_side = not on_the_upper_side
+    return np.vstack(lst[:])
 
 
 def eclair_max(w, F, step, rmin, rmax, N):
@@ -229,30 +227,27 @@ def eclair_max(w, F, step, rmin, rmax, N):
 
     :param w: the width of the road
     :param F: the formal description of the road
-    :param step: step size of the array
+    :param step: step size of the road array
     :param rmin: minimum radius in the range
     :param rmax: maximum radius in the range
-    :param N: the number of values 
+    :param N: the number of values
     :type w: float
     :type F:
     :type step: float
     :type rmin: float
     :type rmax: float
     :type N: int
-    :return: Res: an array containing the different ratios (line 1) for each 
-    radius (line 0)
-    :return: road_area: the area of the road
+    :return: res[0]: an array containing the different radii
+    :return: ratio: the road area divided by the total lit area
     :return: the index of the maximum value in res
-
     """
-    road = road_creator(F, step, w) 
-    road_area = area(road[4:]) - area(road[2:4]) 
+    road = road_creator(F, step, w)
+    road_area = area(np.concatenate((road[2:4], np.fliplr(road[4:])), axis=1))
     res = np.empty((2, N), dtype=float)
-    for k in xrange(N):
+    for k in range(N):
         r = rmin + k * (rmax - rmin) / float(N)
-        lamp = eclaire(w, r, step, road)
+        lamp = eclaire(r, road)
         res[0, k] = r
         res[1, k] = len(lamp)
     ratio = road_area / (res[1] * pi * res[0] ** 2)
-    return res, road_area, np.argmax(ratio)
-
+    return res[0], ratio, np.argmax(ratio)
